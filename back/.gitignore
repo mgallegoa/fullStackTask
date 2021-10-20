@@ -1,0 +1,5 @@
+.env
+project.lock.json
+dist
+.vs
+node_modules
