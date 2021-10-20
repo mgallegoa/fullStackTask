@@ -15,6 +15,7 @@ const options = {
     "Access-Control-Allow-Methods": 'POST, GET, PUT, DELETE, OPTIONS'
 };
 
+// Middleware section
 app.use(session({ secret: 'test_secret', saveUninitialized: true, resave: true }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -23,16 +24,18 @@ app.use(express.static(__dirname + '/views'));
 app.use(cors(options));
 
 let userSession;
-function authenticateUser(req, res, next) {
-    if (req.session.email !== undefined) {
-        console.log("User is authenticated!");
-        next();
+
+/**Challenge 1: Middleware that only allows request to proceed if req has session and it's applicable only to all URLs that start with pub/proxy  and api/proxy*/
+function authenticateUserForProxyRequest(req, res, next) {
+    if (req.session.email === undefined) {
+        res.sendFile(__dirname + '/views/error.html');
     } else {
-        console.log("Unauthorised access!");
-        res.write('<h3>Please login to access feature.</h3>');
-        res.end('<a href=' + '/login' + '>Login</a>');
+        next();
     }
 }
+
+app.use('/pub/proxy/*', authenticateUserForProxyRequest);
+app.use('/api/proxy/*', authenticateUserForProxyRequest);
 
 router.get('/', (req, res) => {
     userSession = req.session;
@@ -49,7 +52,7 @@ router.post('/login', (req, res) => {
     res.end('done');
 });
 
-router.get('/api/*', authenticateUser, (req, res, next) => {
+router.get('/api/*', (req, res, next) => {
     res.write(`<h1>Hello ${userSession.email} </h1><br>`);
     res.write(`<h1>Open Postman and browse '/save/:id' with post method 
     and pass some Json to store request.</h1><br>`);
@@ -58,7 +61,7 @@ router.get('/api/*', authenticateUser, (req, res, next) => {
 });
 
 
-router.get('/pub/*', authenticateUser, (req, res, next) => {
+router.get('/pub/*', (req, res, next) => {
     res.write(`<h1>Hello ${userSession.email} </h1><br>`);
     res.write(`<h1>Open Postman and browse '/save/:id' with post method 
     and pass some Json to store file</h1><br>`);
